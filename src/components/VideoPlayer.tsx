@@ -9,29 +9,45 @@ type Props = {
 const VideoPlayer = ({ src, timePercent, onTimeUpdate }: Props) => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
+  // when src changes, seek + autoplay
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
     const handleLoaded = () => {
-      const newTime = video.duration * timePercent
-      video.currentTime = newTime
-      video.play()
-    }
+      const targetTime = video.duration * timePercent
+      video.currentTime = targetTime
 
-    const handleTimeUpdate = () => {
-      if (!video || video.duration === 0) return
-      onTimeUpdate(video.currentTime / video.duration)
+      // delay play until seeking is stable
+      setTimeout(() => {
+        video.play().catch((err) => {
+          console.warn('Playback failed:', err)
+        })
+      }, 100) // tiny delay helps with browser seeking quirks
     }
 
     video.addEventListener('loadedmetadata', handleLoaded)
-    video.addEventListener('timeupdate', handleTimeUpdate)
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoaded)
+    }
+  }, [src])
+
+  // keep tracking progress
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const handleTimeUpdate = () => {
+      if (!video.duration) return
+      onTimeUpdate(video.currentTime / video.duration)
+    }
+
+    video.addEventListener('timeupdate', handleTimeUpdate)
+    return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [src, timePercent])
+  }, [onTimeUpdate])
 
   return (
     <video
