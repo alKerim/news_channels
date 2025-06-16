@@ -1,54 +1,81 @@
-# React + TypeScript + Vite
+# 🎛️ TITEL PROJEKT — Interactive Political Video Installation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a local prototype of a media art installation exploring the manipulation of news and reality through political alignment. Two discrete sliders determine the orientation of the video news stream. As users move between political axes (economic: left↔right, social: progressive↔conservative), the played video changes — always continuing at the same relative time point.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Getting Started
 
-## Expanding the ESLint configuration
+### 1. Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Ensure you have installed:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- [Node.js (LTS)](https://nodejs.org/)
+- `npm` (comes with Node.js)
+
+---
+
+
+### 2. Install Dependencies
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 3. Start the App
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+npm run dev
 ```
+
+Open in your browser:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 📦 Project Structure
+
+```
+installation-app/
+├── public/
+│   └── videos/
+├── src/
+│   ├── components/
+│   │   ├── VideoPlayer.tsx
+│   │   └── SliderPanel.tsx
+│   ├── data/
+│   │   └── videoMap.ts
+│   ├── App.tsx
+│   └── main.tsx
+├── index.html
+├── package.json
+└── README.md
+```
+
+---
+
+## ⚙️ Features
+
+* Seamless switching between videos with synced relative playback time
+* Two discrete sliders representing political axes
+* Local-only setup, no backend or internet needed
+
+---
+
+## ✨ Next Steps / Ideas
+
+* Style with Tailwind or custom UI
+* Add visual filters (glitch effects, color shifts) per slider position
+* Maybe add an Advertisement right after switching to make the switching appear natural
+
+---
+
+## 🧠 Concept
+
+Developed as part of the **"AI in Arts"** project
+
