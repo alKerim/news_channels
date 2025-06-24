@@ -4,9 +4,10 @@ type Props = {
   src: string
   timePercent: number
   onTimeUpdate: (percent: number) => void
+  onEnd?: () => void
 }
 
-const VideoPlayer = ({ src, timePercent, onTimeUpdate }: Props) => {
+const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd }: Props) => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   // when src changes, seek + autoplay
@@ -31,7 +32,7 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate }: Props) => {
     return () => {
       video.removeEventListener('loadedmetadata', handleLoaded)
     }
-  }, [src])
+  }, [src, timePercent])
 
   // keep tracking progress
   useEffect(() => {
@@ -48,6 +49,16 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate }: Props) => {
       video.removeEventListener('timeupdate', handleTimeUpdate)
     }
   }, [onTimeUpdate])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !onEnd) return
+
+    video.addEventListener('ended', onEnd)
+    return () => {
+      video.removeEventListener('ended', onEnd)
+    }
+  }, [onEnd])
 
   return (
     <video
