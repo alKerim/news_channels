@@ -47,7 +47,7 @@ const App = () => {
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h2>Political Media Stream</h2>
+      <h2>Latent News</h2>
       <VideoPlayer
         src={src}
         timePercent={isPlayingAd ? 0 : timePercent}
