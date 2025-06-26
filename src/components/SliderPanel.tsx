@@ -1,5 +1,3 @@
-import React from 'react'
-
 type Axis = 'horizontal' | 'vertical'
 type Direction = 'left' | 'neutral' | 'right' | 'conservative' | 'progressive'
 
