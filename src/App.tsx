@@ -2,6 +2,7 @@ import { useState } from 'react'
 import VideoPlayer from './components/VideoPlayer'
 import SliderPanel from './components/SliderPanel'
 import { getVideoSource, getAdSource } from './data/videoMap'
+import { usePicoSwitches } from './hooks/usePicoSwitches'
 
 const App = () => {
   const [position, setPosition] = useState({
@@ -12,6 +13,8 @@ const App = () => {
   const [targetPosition, setTargetPosition] = useState(position)
   const [timePercent, setTimePercent] = useState(0)
   const [isPlayingAd, setIsPlayingAd] = useState(false)
+  const [adVersion, setAdVersion] = useState(0)
+  const [adTimePercent, setAdTimePercent] = useState(0)
 
   // Choose source based on whether we're in ad mode
   const src = isPlayingAd
@@ -19,42 +22,104 @@ const App = () => {
     : getVideoSource(targetPosition)
 
   const handleTimeUpdate = (percent: number) => {
-    if (!isPlayingAd) {
+    if (isPlayingAd) {
+      setAdTimePercent(percent)
+    } else {
       setTimePercent(percent)
     }
   }
 
-  // Handle when direction changes via SliderPanel
   const handlePositionChange = (newPos: typeof position) => {
-    if (
-      newPos.horizontal !== position.horizontal ||
-      newPos.vertical !== position.vertical
-    ) {
-      // Only play ad if there's actually a change
+    const changed =
+      newPos.horizontal !== targetPosition.horizontal ||
+      newPos.vertical !== targetPosition.vertical
+
+    if (changed) {
       setTargetPosition(newPos)
-      setIsPlayingAd(true)
+      if (isPlayingAd) {
+        // Restart ad with new source
+        setAdVersion((v) => v + 1)
+      } else {
+        setIsPlayingAd(true)
+      }
     }
   }
 
-  // Called when video (ad or news) ends
   const handleVideoEnd = () => {
     if (isPlayingAd) {
-      // Ad just finished — now update direction + play main video at same time
       setIsPlayingAd(false)
+      setAdTimePercent(0)
       setPosition(targetPosition)
     }
   }
 
+
+  const handleSwitch1 = (state: number) => {
+    const newHorizontal: 'left' | 'right' = state === 0 ? 'left' : 'right'
+    const newPos: typeof position = {
+      horizontal: newHorizontal,
+      vertical: targetPosition.vertical,
+    }
+    handlePositionChange(newPos)
+  }
+
+
+  const handleSwitch2 = (state: number) => {
+    const newVertical: 'conservative' | 'progressive' = state === 0 ? 'conservative' : 'progressive'
+    const newPos: typeof position = {
+      horizontal: targetPosition.horizontal,
+      vertical: newVertical,
+    }
+    handlePositionChange(newPos)
+  }
+
+
+  const { isConnected } = usePicoSwitches({
+    picoIP: '192.168.36.125', 
+    onSwitch1: handleSwitch1,
+    onSwitch2: handleSwitch2,
+    pollInterval: 3000
+  })
+
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
       <h2>Latent News</h2>
+      
+      {/* Connection status indicator */}
+      <div style={{ 
+        padding: '8px 12px', 
+        borderRadius: '4px', 
+        backgroundColor: isConnected ? '#d4edda' : '#f8d7da',
+        color: isConnected ? '#155724' : '#721c24',
+        fontSize: '14px',
+        marginBottom: '1rem',
+        display: 'inline-block'
+      }}>
+        Pico W: {isConnected ? 'Connected' : 'Disconnected'}
+      </div>
+
       <VideoPlayer
+        key={isPlayingAd ? `ad-${adVersion}` : 'main'}
         src={src}
-        timePercent={isPlayingAd ? 0 : timePercent}
+        timePercent={isPlayingAd ? adTimePercent : timePercent}
         onTimeUpdate={handleTimeUpdate}
         onEnd={handleVideoEnd}
       />
-      <SliderPanel value={position} onChange={handlePositionChange} />
+      
+      <SliderPanel value={targetPosition} onChange={handlePositionChange} />
+      
+      {/* Instructions for physical switches */}
+      <div style={{ 
+        marginTop: '1rem', 
+        padding: '12px', 
+        backgroundColor: '#f8f9fa', 
+        borderRadius: '4px',
+        fontSize: '14px'
+      }}>
+        <strong>Physical Controls:</strong><br/>
+        Switch 1: Horizontal position (Left ↔ Right)<br/>
+        Switch 2: Vertical position (Conservative ↔ Progressive)
+      </div>
     </div>
   )
 }
