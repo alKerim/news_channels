@@ -53,7 +53,6 @@ const App = () => {
     }
   }
 
-
   const handleSwitch1 = (state: number) => {
     const newHorizontal: 'left' | 'right' = state === 0 ? 'left' : 'right'
     const newPos: typeof position = {
@@ -62,7 +61,6 @@ const App = () => {
     }
     handlePositionChange(newPos)
   }
-
 
   const handleSwitch2 = (state: number) => {
     const newVertical: 'conservative' | 'progressive' = state === 0 ? 'conservative' : 'progressive'
@@ -73,9 +71,8 @@ const App = () => {
     handlePositionChange(newPos)
   }
 
-
   const { isConnected } = usePicoSwitches({
-    picoIP: '192.168.36.125', 
+    picoIP: 'IP ADDRESS', 
     onSwitch1: handleSwitch1,
     onSwitch2: handleSwitch2,
     pollInterval: 3000
