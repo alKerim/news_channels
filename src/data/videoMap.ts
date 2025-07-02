@@ -11,8 +11,8 @@ export function getVideoSource(pos: Position): string {
     'left_progressive': '/videos/left_progressive.mp4',
     'neutral_conservative': '/videos/neutral.mp4',
     'neutral_progressive': '/videos/neutral.mp4',
-    'right_conservative': '/videos/placeholder.mp4',
-    'right_progressive': '/videos/placeholder.mp4',
+    'right_conservative': '/videos/right_conservative.mp4',
+    'right_progressive': '/videos/right_progressive.mp4',
   }
 
   return map[key] ?? '/videos/placeholder.mp4'
