@@ -19,7 +19,7 @@ const SliderPanel = ({ value, onChange }: Props) => {
       <div>
         <label>Economic Axis (Left - Neutral - Right):</label>
         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-          {['left', 'neutral', 'right'].map((dir) => (
+          {['kollective', 'neutral', 'neuliberal'].map((dir) => (
             <button
               key={dir}
               onClick={() => handleAxisChange('horizontal', dir as any)}
@@ -38,9 +38,9 @@ const SliderPanel = ({ value, onChange }: Props) => {
         </div>
       </div>
       <div>
-        <label>Social Axis (Progressive - Conservative):</label>
+        <label>Social Axis (Progressive - Authorative):</label>
         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-          {['progressive', 'conservative'].map((dir) => (
+          {['progressive', 'authorative'].map((dir) => (
             <button
               key={dir}
               onClick={() => handleAxisChange('vertical', dir as any)}
