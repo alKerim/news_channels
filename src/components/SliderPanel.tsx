@@ -1,23 +1,22 @@
 type Axis = "horizontal" | "vertical";
-type Direction = "left" | "right" | "conservative" | "progressive";
 
 type Props = {
   value: {
-    horizontal: "left" | "right";
-    vertical: "conservative" | "progressive";
+    horizontal: "collective" | "neoliberal";
+    vertical: "progressive" | "authoritative";
   };
   onChange: (newValue: {
-    horizontal: "left" | "right";
-    vertical: "conservative" | "progressive";
+    horizontal: "collective" | "neoliberal";
+    vertical: "progressive" | "authoritative";
   }) => void;
 };
 
 const SliderPanel = ({ value, onChange }: Props) => {
-  const handleAxisChange = (axis: Axis, direction: Direction) => {
+  const handleAxisChange = (axis: Axis, direction: string) => {
     onChange({
       ...value,
       [axis]: direction,
-    } as any);
+    } as Props["value"]);
   };
 
   return (
@@ -30,12 +29,12 @@ const SliderPanel = ({ value, onChange }: Props) => {
       }}
     >
       <div>
-        <label>Economic Axis (Kollective - Neoliberal):</label>
+        <label>Economic Axis (Collective - Neoliberal):</label>
         <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-          {["kollective", "neutral", "neuliberal"].map((dir) => (
+          {(["collective", "neoliberal"] as const).map((dir) => (
             <button
               key={dir}
-              onClick={() => handleAxisChange("horizontal", dir as any)}
+              onClick={() => handleAxisChange("horizontal", dir)}
               style={{
                 padding: "0.5rem 1rem",
                 backgroundColor: value.horizontal === dir ? "#222" : "#ccc",
@@ -51,12 +50,12 @@ const SliderPanel = ({ value, onChange }: Props) => {
         </div>
       </div>
       <div>
-        <label>Social Axis (Progressive - Authorative):</label>
+        <label>Social Axis (Progressive - Authoritative):</label>
         <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-          {["progressive", "authorative"].map((dir) => (
+          {(["progressive", "authoritative"] as const).map((dir) => (
             <button
               key={dir}
-              onClick={() => handleAxisChange("vertical", dir as any)}
+              onClick={() => handleAxisChange("vertical", dir)}
               style={{
                 padding: "0.5rem 1rem",
                 backgroundColor: value.vertical === dir ? "#222" : "#ccc",

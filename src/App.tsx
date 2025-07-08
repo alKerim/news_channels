@@ -6,8 +6,8 @@ import { usePicoSwitches } from './hooks/usePicoSwitches'
 
 const App = () => {
   const [position, setPosition] = useState({
-    horizontal: 'neutral' as 'left' | 'neutral' | 'right',
-    vertical: 'conservative' as 'conservative' | 'progressive',
+    horizontal: 'collective' as 'collective' | 'neoliberal',
+    vertical: 'progressive' as 'progressive' | 'authoritative',
   })
 
   const [targetPosition, setTargetPosition] = useState(position)
@@ -54,7 +54,7 @@ const App = () => {
   }
 
   const handleSwitch1 = (state: number) => {
-    const newHorizontal: 'left' | 'right' = state === 0 ? 'left' : 'right'
+    const newHorizontal: 'collective' | 'neoliberal' = state === 0 ? 'collective' : 'neoliberal'
     const newPos: typeof position = {
       horizontal: newHorizontal,
       vertical: targetPosition.vertical,
@@ -63,7 +63,7 @@ const App = () => {
   }
 
   const handleSwitch2 = (state: number) => {
-    const newVertical: 'conservative' | 'progressive' = state === 0 ? 'conservative' : 'progressive'
+    const newVertical: 'progressive' | 'authoritative' = state === 0 ? 'progressive' : 'authoritative'
     const newPos: typeof position = {
       horizontal: targetPosition.horizontal,
       vertical: newVertical,
@@ -114,8 +114,8 @@ const App = () => {
         fontSize: '14px'
       }}>
         <strong>Physical Controls:</strong><br/>
-        Switch 1: Horizontal position (Left ↔ Right)<br/>
-        Switch 2: Vertical position (Conservative ↔ Progressive)
+        Switch 1: Horizontal position (Collective ↔ Neoliberal)<br/>
+        Switch 2: Vertical position (Progressive ↔ Authoritative)
       </div>
     </div>
   )
