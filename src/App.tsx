@@ -14,19 +14,14 @@ const App = () => {
   const [timePercent, setTimePercent] = useState(0)
   const [isPlayingAd, setIsPlayingAd] = useState(false)
   const [adVersion, setAdVersion] = useState(0)
-  const [adTimePercent, setAdTimePercent] = useState(0)
 
   // Choose source based on whether we're in ad mode
   const src = isPlayingAd
-    ? getAdSource(targetPosition)
-    : getVideoSource(targetPosition)
+    ? getAdSource(position) // Use current position for ads
+    : getVideoSource(position) // Use current position for news
 
   const handleTimeUpdate = (percent: number) => {
-    if (isPlayingAd) {
-      setAdTimePercent(percent)
-    } else {
-      setTimePercent(percent)
-    }
+    setTimePercent(percent)
   }
 
   const handlePositionChange = (newPos: typeof position) => {
@@ -36,20 +31,31 @@ const App = () => {
 
     if (changed) {
       setTargetPosition(newPos)
+      setPosition(newPos)
+      
       if (isPlayingAd) {
-        // Restart ad with new source
-        setAdVersion((v) => v + 1)
+        // If we're currently playing an ad, switch to the new direction's ad
+        setAdVersion((v) => v + 1) // Force ad to restart with new source
+        // Keep current timePercent when switching ad directions
       } else {
-        setIsPlayingAd(true)
+        // If we're playing news, immediately switch to new news video
+        // Keep current timePercent when switching directions
       }
     }
   }
 
   const handleVideoEnd = () => {
     if (isPlayingAd) {
+      // Ad finished, switch back to news
       setIsPlayingAd(false)
-      setAdTimePercent(0)
-      setPosition(targetPosition)
+      // Reset timePercent to start news from beginning
+      setTimePercent(0)
+    } else {
+      // News finished, switch to ad
+      setIsPlayingAd(true)
+      setAdVersion((v) => v + 1) // Force ad to restart
+      // Reset timePercent to start ad from beginning
+      setTimePercent(0)
     }
   }
 
@@ -72,7 +78,7 @@ const App = () => {
   }
 
   const { isConnected } = usePicoSwitches({
-    picoIP: 'IP ADDRESS', 
+    picoIP: '192.168.178.25', 
     onSwitch1: handleSwitch1,
     onSwitch2: handleSwitch2,
     pollInterval: 3000
@@ -96,9 +102,9 @@ const App = () => {
       </div>
 
       <VideoPlayer
-        key={isPlayingAd ? `ad-${adVersion}` : 'main'}
+        key={isPlayingAd ? `ad-${adVersion}` : `news-${position.horizontal}-${position.vertical}`}
         src={src}
-        timePercent={isPlayingAd ? adTimePercent : timePercent}
+        timePercent={timePercent}
         onTimeUpdate={handleTimeUpdate}
         onEnd={handleVideoEnd}
       />
@@ -116,6 +122,18 @@ const App = () => {
         <strong>Physical Controls:</strong><br/>
         Switch 1: Horizontal position (Collective ↔ Neoliberal)<br/>
         Switch 2: Vertical position (Progressive ↔ Authoritative)
+      </div>
+      
+      {/* Debug info */}
+      <div style={{ 
+        marginTop: '1rem', 
+        padding: '12px', 
+        backgroundColor: '#e9ecef', 
+        borderRadius: '4px',
+        fontSize: '12px'
+      }}>
+        <strong>Current:</strong> {position.horizontal} + {position.vertical}<br/>
+        <strong>Playing:</strong> {isPlayingAd ? 'Ad' : 'News'}
       </div>
     </div>
   )

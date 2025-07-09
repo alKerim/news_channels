@@ -4,12 +4,15 @@ from machine import Pin
 import json
 import time
 import gc
+import utime
 
-WIFI_SSID = "SSID"
-WIFI_PASSWORD = "PW"
+# Configuration
+WIFI_SSID = "FRITZ!Box 7510 BD"
+WIFI_PASSWORD = "02060934382626285338"
 
-SWITCH1_PIN = 3
-SWITCH2_PIN = 5
+# GPIO pin configuration (adjust these for your ESP board)
+SWITCH1_PIN = 2   # GPIO2 on ESP32, D4 on ESP8266
+SWITCH2_PIN = 4   # GPIO4 on ESP32, D2 on ESP8266
 SERVER_PORT = 8080
 
 def connect_wifi():
@@ -92,15 +95,16 @@ class HTTPServer:
                     self.send_json_response(client, response_data)
                     
                 elif '/status' in request_line:
-                    # Health check endpoint
-                    response_data = {"status": "ok", "uptime": time.ticks_ms()}
+                    # Health check endpoint - use utime for ESP compatibility
+                    response_data = {"status": "ok", "uptime": utime.ticks_ms()}
                     self.send_json_response(client, response_data)
                     
                 else:
                     # Default response
                     response_data = {
-                        "message": "Pico W Switch Server",
-                        "endpoints": ["/switches", "/status"]
+                        "message": "ESP Switch Server",
+                        "endpoints": ["/switches", "/status"],
+                        "board": "ESP32/ESP8266"
                     }
                     self.send_json_response(client, response_data)
             
@@ -159,7 +163,7 @@ def main():
         return
     
     print("\n" + "="*50)
-    print(f"PICO W READY!")
+    print(f"ESP READY!")
     print(f"IP Address: {ip_address}")
     print(f"Server Port: {SERVER_PORT}")
     print(f"Update your React app with: picoIP: '{ip_address}'")
