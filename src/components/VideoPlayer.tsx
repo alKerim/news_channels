@@ -10,15 +10,15 @@ type Props = {
     horizontal: "collective" | "neoliberal";
     vertical: "progressive" | "authoritative";
   }
+  hideUI?: boolean
 }
 
-const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, position }: Props) => {
+const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, position, hideUI = false }: Props) => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
 
-  // when src changes, seek + autoplay
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -31,7 +31,6 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, posi
       setDuration(video.duration)
       setIsLoading(false)
 
-      // delay play until seeking is stable
       setTimeout(() => {
         video.play().catch((err) => {
           console.warn('Playback failed:', err)
@@ -59,7 +58,6 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, posi
     }
   }, [src, timePercent])
 
-  // keep tracking progress
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -87,25 +85,6 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, posi
     }
   }, [onEnd])
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const getPositionColor = () => {
-    if (!position) return '#6b7280'
-    
-    const { horizontal, vertical } = position
-    
-    if (horizontal === 'collective' && vertical === 'progressive') return '#10b981' // green
-    if (horizontal === 'neoliberal' && vertical === 'progressive') return '#3b82f6' // blue  
-    if (horizontal === 'collective' && vertical === 'authoritative') return '#dc2626' // red
-    if (horizontal === 'neoliberal' && vertical === 'authoritative') return '#7c3aed' // purple
-    
-    return '#6b7280'
-  }
-
   return (
     <div style={{
       position: 'relative',
@@ -114,18 +93,18 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, posi
       overflow: 'hidden',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     }}>
-    <video
-      ref={videoRef}
-      src={src}
-      controls
-      style={{
-        width: '100%',
-        height: '100%',
-        maxWidth: '100%',
-        display: 'block',
-        backgroundColor: '#f9fafb',
-      }}
-    />
+      <video
+        ref={videoRef}
+        src={src}
+        controls={!hideUI}
+        style={{
+          width: '100%',
+          height: '100%',
+          maxWidth: '100%',
+          display: 'block',
+          backgroundColor: '#000',
+        }}
+      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import VideoPlayer from './components/VideoPlayer'
+// import SliderPanel (removed)
 import { getVideoSource, getAdSource } from './data/videoMap'
 import { usePicoSliders } from './hooks/useEspSliders'
 
@@ -13,9 +14,9 @@ const App = () => {
   const [timePercent, setTimePercent] = useState(0)
   const [isPlayingAd, setIsPlayingAd] = useState(false)
   const [adVersion, setAdVersion] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const currentVideoTimeRef = useRef(0)
-  const isTransitioningRef = useRef(false)
 
   const src = isPlayingAd
     ? getAdSource(position)
@@ -31,8 +32,8 @@ const App = () => {
       newPos.horizontal !== position.horizontal ||
       newPos.vertical !== position.vertical
 
-    if (changed && !isTransitioningRef.current) {
-      isTransitioningRef.current = true
+    if (changed && !isTransitioning) {
+      setIsTransitioning(true)
 
       setTargetPosition(newPos)
       setPosition(newPos)
@@ -41,13 +42,15 @@ const App = () => {
         setAdVersion((v) => v + 1)
       }
 
+      // Show transition UI briefly
       setTimeout(() => {
-        isTransitioningRef.current = false
-      }, 100)
+        setIsTransitioning(false)
+      }, 800)
     }
   }
 
   const handleVideoEnd = () => {
+    setIsTransitioning(true)
     if (isPlayingAd) {
       setIsPlayingAd(false)
       setTimePercent(0)
@@ -58,6 +61,10 @@ const App = () => {
       setTimePercent(0)
       currentVideoTimeRef.current = 0
     }
+
+    setTimeout(() => {
+      setIsTransitioning(false)
+    }, 800)
   }
 
   const percentageToHorizontal = (
@@ -89,7 +96,7 @@ const App = () => {
   }
 
   const { isConnected, sliderData, error, connectionStrength } = usePicoSliders({
-    picoIP: 'IP',
+    picoIP: '192.168.178.25',
     onSlider1A: handleHorizontalSlider,
     onSlider2A: handleVerticalSlider, 
     pollInterval: 150,
@@ -193,10 +200,9 @@ const App = () => {
           onEnd={handleVideoEnd}
           isAd={isPlayingAd}
           position={position}
+          hideUI={isTransitioning}
         />
       </div>
-
-      {/* Removed: <SliderPanel /> */}
     </div>
   )
 }
