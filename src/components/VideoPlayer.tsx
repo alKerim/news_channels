@@ -114,25 +114,6 @@ const VideoPlayer = ({ src, timePercent, onTimeUpdate, onEnd, isAd = false, posi
       overflow: 'hidden',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     }}>
-      {/* Position Indicator */}
-      {position && !isAd && (
-        <div style={{
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 10,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          padding: '0.5rem 1rem',
-          borderRadius: '20px',
-          fontSize: '0.8rem',
-          fontWeight: '500',
-          textTransform: 'capitalize'
-        }}>
-          {position.horizontal} + {position.vertical}
-        </div>
-      )}
-
     <video
       ref={videoRef}
       src={src}

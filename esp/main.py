@@ -1,18 +1,25 @@
 import network
 import socket
-from machine import Pin
+from machine import Pin, ADC
 import json
 import time
 import gc
 import utime
 
 # Configuration
-WIFI_SSID = "FRITZ!Box 7510 BD"
-WIFI_PASSWORD = "02060934382626285338"
+WIFI_SSID = "SSID"
+WIFI_PASSWORD = "PASSWORD"
 
-# GPIO pin configuration (adjust these for your ESP board)
-SWITCH1_PIN = 2   # GPIO2 on ESP32, D4 on ESP8266
-SWITCH2_PIN = 4   # GPIO4 on ESP32, D2 on ESP8266
+# GPIO pin configuration for Soldered dual-channel sliders
+# Using commonly labeled ADC pins on ESP32
+# Slider 1
+SLIDER1_OUTA_PIN = 36   # GPIO36 (ADC1_CH0) - Channel A of first slider
+SLIDER1_OUTB_PIN = 32   # GPIO32 (ADC1_CH4) - Channel B of first slider
+
+# Slider 2
+SLIDER2_OUTA_PIN = 34   # GPIO34 (ADC1_CH6) - Channel A of second slider
+SLIDER2_OUTB_PIN = 33   # GPIO33 (ADC1_CH5) - Channel B of second slider
+
 SERVER_PORT = 8080
 
 def connect_wifi():
@@ -46,11 +53,28 @@ def connect_wifi():
         print(f"Full network config: {wlan.ifconfig()}")
         return ip
 
-def setup_switches():
-    """Setup GPIO pins for switches"""
-    switch1 = Pin(SWITCH1_PIN, Pin.IN, Pin.PULL_UP)
-    switch2 = Pin(SWITCH2_PIN, Pin.IN, Pin.PULL_UP)
-    return switch1, switch2
+def setup_sliders():
+    """Setup ADC pins for dual-channel sliders"""
+    # Create ADC objects for all slider channels
+    slider1_a = ADC(Pin(SLIDER1_OUTA_PIN))
+    slider1_b = ADC(Pin(SLIDER1_OUTB_PIN))
+    slider2_a = ADC(Pin(SLIDER2_OUTA_PIN))
+    slider2_b = ADC(Pin(SLIDER2_OUTB_PIN))
+    
+    # Set attenuation for full 3.3V range (0-4095 values)
+    slider1_a.atten(ADC.ATTN_11DB)
+    slider1_b.atten(ADC.ATTN_11DB)
+    slider2_a.atten(ADC.ATTN_11DB)
+    slider2_b.atten(ADC.ATTN_11DB)
+    
+    return slider1_a, slider1_b, slider2_a, slider2_b
+
+def read_slider_percentage(adc):
+    """Read ADC value and convert to percentage (0-100)"""
+    raw_value = adc.read()
+    # Convert from 0-4095 range to 0-100 percentage
+    percentage = int((raw_value / 4095) * 100)
+    return percentage
 
 class HTTPServer:
     def __init__(self, port=8080):
@@ -72,7 +96,7 @@ class HTTPServer:
             print(f"Failed to start server: {e}")
             return False
     
-    def handle_request(self, switch1, switch2):
+    def handle_request(self, slider1_a, slider1_b, slider2_a, slider2_b):
         """Handle incoming HTTP requests"""
         try:
             client, addr = self.socket.accept()
@@ -86,25 +110,45 @@ class HTTPServer:
                 print(f"Request: {request_line.strip()}")
                 
                 # Handle different endpoints
-                if '/switches' in request_line:
-                    # Return current switch states
+                if '/sliders' in request_line:
+                    # Return current slider values for all channels
                     response_data = {
-                        "switch1": switch1.value(),
-                        "switch2": switch2.value()
+                        "slider1": {
+                            "channel_a": {
+                                "raw": slider1_a.read(),
+                                "percentage": read_slider_percentage(slider1_a)
+                            },
+                            "channel_b": {
+                                "raw": slider1_b.read(),
+                                "percentage": read_slider_percentage(slider1_b)
+                            }
+                        },
+                        "slider2": {
+                            "channel_a": {
+                                "raw": slider2_a.read(),
+                                "percentage": read_slider_percentage(slider2_a)
+                            },
+                            "channel_b": {
+                                "raw": slider2_b.read(),
+                                "percentage": read_slider_percentage(slider2_b)
+                            }
+                        }
                     }
                     self.send_json_response(client, response_data)
                     
                 elif '/status' in request_line:
-                    # Health check endpoint - use utime for ESP compatibility
+                    # Health check endpoint
                     response_data = {"status": "ok", "uptime": utime.ticks_ms()}
                     self.send_json_response(client, response_data)
                     
                 else:
                     # Default response
                     response_data = {
-                        "message": "ESP Switch Server",
-                        "endpoints": ["/switches", "/status"],
-                        "board": "ESP32/ESP8266"
+                        "message": "ESP Dual-Channel Slider Server",
+                        "endpoints": ["/sliders", "/status"],
+                        "board": "ESP32",
+                        "slider_range": "0-100%",
+                        "channels": "Each slider has channels A and B"
                     }
                     self.send_json_response(client, response_data)
             
@@ -148,13 +192,19 @@ def main():
         return
     
     # Setup hardware
-    switch1, switch2 = setup_switches()
+    slider1_a, slider1_b, slider2_a, slider2_b = setup_sliders()
     
-    # Track switch states
-    last_state1 = switch1.value()
-    last_state2 = switch2.value()
+    # Track slider values for change detection
+    last_values = {
+        "s1a": read_slider_percentage(slider1_a),
+        "s1b": read_slider_percentage(slider1_b),
+        "s2a": read_slider_percentage(slider2_a),
+        "s2b": read_slider_percentage(slider2_b)
+    }
     
-    print(f"Initial switch states - Switch1: {last_state1}, Switch2: {last_state2}")
+    print(f"Initial slider values:")
+    print(f"  Slider 1A: {last_values['s1a']}%, Slider 1B: {last_values['s1b']}%")
+    print(f"  Slider 2A: {last_values['s2a']}%, Slider 2B: {last_values['s2b']}%")
     
     # Start server
     server = HTTPServer(SERVER_PORT)
@@ -162,33 +212,46 @@ def main():
         print("Failed to start server")
         return
     
-    print("\n" + "="*50)
+    print("\n" + "="*60)
     print(f"ESP READY!")
     print(f"IP Address: {ip_address}")
     print(f"Server Port: {SERVER_PORT}")
     print(f"Update your React app with: picoIP: '{ip_address}'")
-    print(f"Switch 1 on GPIO {SWITCH1_PIN}")
-    print(f"Switch 2 on GPIO {SWITCH2_PIN}")
-    print(f"Test URL: http://{ip_address}:{SERVER_PORT}/switches")
-    print("="*50 + "\n")
+    print(f"Slider 1 - Channel A: GPIO {SLIDER1_OUTA_PIN}, Channel B: GPIO {SLIDER1_OUTB_PIN}")
+    print(f"Slider 2 - Channel A: GPIO {SLIDER2_OUTA_PIN}, Channel B: GPIO {SLIDER2_OUTB_PIN}")
+    print(f"Test URL: http://{ip_address}:{SERVER_PORT}/sliders")
+    print("="*60 + "\n")
     
     # Main loop
     try:
         while True:
             # Handle HTTP requests
-            server.handle_request(switch1, switch2)
+            server.handle_request(slider1_a, slider1_b, slider2_a, slider2_b)
             
-            # Check switch states for console output
-            current_state1 = switch1.value()
-            current_state2 = switch2.value()
+            # Check slider values for console output (with threshold to avoid noise)
+            current_values = {
+                "s1a": read_slider_percentage(slider1_a),
+                "s1b": read_slider_percentage(slider1_b),
+                "s2a": read_slider_percentage(slider2_a),
+                "s2b": read_slider_percentage(slider2_b)
+            }
             
-            if current_state1 != last_state1:
-                print(f"Switch 1: {last_state1} -> {current_state1}")
-                last_state1 = current_state1
+            # Only print if there's a significant change (>= 2% to avoid noise)
+            if abs(current_values["s1a"] - last_values["s1a"]) >= 2:
+                print(f"Slider 1A: {last_values['s1a']}% -> {current_values['s1a']}%")
+                last_values["s1a"] = current_values["s1a"]
             
-            if current_state2 != last_state2:
-                print(f"Switch 2: {last_state2} -> {current_state2}")
-                last_state2 = current_state2
+            if abs(current_values["s1b"] - last_values["s1b"]) >= 2:
+                print(f"Slider 1B: {last_values['s1b']}% -> {current_values['s1b']}%")
+                last_values["s1b"] = current_values["s1b"]
+            
+            if abs(current_values["s2a"] - last_values["s2a"]) >= 2:
+                print(f"Slider 2A: {last_values['s2a']}% -> {current_values['s2a']}%")
+                last_values["s2a"] = current_values["s2a"]
+            
+            if abs(current_values["s2b"] - last_values["s2b"]) >= 2:
+                print(f"Slider 2B: {last_values['s2b']}% -> {current_values['s2b']}%")
+                last_values["s2b"] = current_values["s2b"]
             
             # Small delay
             time.sleep(0.01)  # 10ms
