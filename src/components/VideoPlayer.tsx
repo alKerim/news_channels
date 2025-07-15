@@ -7,7 +7,7 @@ type Props = {
   onEnd?: () => void
   isAd?: boolean
   position?: {
-    horizontal: "collective" | "neoliberal";
+    horizontal: "collective" | "neutral" | "neoliberal";
     vertical: "progressive" | "authoritative";
   }
   hideUI?: boolean

@@ -1,12 +1,17 @@
 import { useState, useRef } from 'react'
 import VideoPlayer from './components/VideoPlayer'
-// import SliderPanel (removed)
+import SliderPanel from './components/SliderPanel'
 import { getVideoSource, getAdSource } from './data/videoMap'
 import { usePicoSliders } from './hooks/useEspSliders'
 
 const App = () => {
   const [position, setPosition] = useState({
-    horizontal: 'collective' as 'collective' | 'neoliberal',
+    horizontal: 'collective' as 'collective' | 'neutral' | 'neoliberal',
+    vertical: 'progressive' as 'progressive' | 'authoritative',
+  })
+
+  const [sliderPosition, setSliderPosition] = useState({
+    horizontal: 'collective' as 'collective' | 'neutral' | 'neoliberal',
     vertical: 'progressive' as 'progressive' | 'authoritative',
   })
 
@@ -15,10 +20,14 @@ const App = () => {
   const [isPlayingAd, setIsPlayingAd] = useState(false)
   const [adVersion, setAdVersion] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isShowingBanner, setIsShowingBanner] = useState(false)
+  const [pendingPosition, setPendingPosition] = useState<typeof position | null>(null)
 
   const currentVideoTimeRef = useRef(0)
 
-  const src = isPlayingAd
+  const src = isShowingBanner 
+    ? '/channel_banner/banner_neutral.mp4'
+    : isPlayingAd
     ? getAdSource(position)
     : getVideoSource(position)
 
@@ -27,20 +36,37 @@ const App = () => {
     currentVideoTimeRef.current = percent * 100
   }
 
+  const handleSliderChange = (newPos: typeof position) => {
+    // Update slider position immediately for visual feedback
+    setSliderPosition(newPos)
+  }
+
+  const handleSliderCommit = (newPos: typeof position) => {
+    const changed =
+      newPos.horizontal !== position.horizontal ||
+      newPos.vertical !== position.vertical
+
+    if (changed && !isTransitioning && !isShowingBanner) {
+      setIsTransitioning(true)
+      setIsShowingBanner(true)
+      setPendingPosition(newPos)
+
+      // Show transition UI briefly
+      setTimeout(() => {
+        setIsTransitioning(false)
+      }, 800)
+    }
+  }
+
   const handlePositionChange = (newPos: typeof position) => {
     const changed =
       newPos.horizontal !== position.horizontal ||
       newPos.vertical !== position.vertical
 
-    if (changed && !isTransitioning) {
+    if (changed && !isTransitioning && !isShowingBanner) {
       setIsTransitioning(true)
-
-      setTargetPosition(newPos)
-      setPosition(newPos)
-
-      if (isPlayingAd) {
-        setAdVersion((v) => v + 1)
-      }
+      setIsShowingBanner(true)
+      setPendingPosition(newPos)
 
       // Show transition UI briefly
       setTimeout(() => {
@@ -51,13 +77,24 @@ const App = () => {
 
   const handleVideoEnd = () => {
     setIsTransitioning(true)
-    if (isPlayingAd) {
+    
+    if (isShowingBanner) {
+      // Banner finished, now show the pending position
+      if (pendingPosition) {
+        setPosition(pendingPosition)
+        setTargetPosition(pendingPosition)
+        setPendingPosition(null)
+      }
+      setIsShowingBanner(false)
+      setTimePercent(0)
+      currentVideoTimeRef.current = 0
+    } else if (isPlayingAd) {
       setIsPlayingAd(false)
       setTimePercent(0)
       currentVideoTimeRef.current = 0
     } else {
       setIsPlayingAd(true)
-      setAdVersion((v) => v + 1)
+      setAdVersion((v: number) => v + 1)
       setTimePercent(0)
       currentVideoTimeRef.current = 0
     }
@@ -69,8 +106,10 @@ const App = () => {
 
   const percentageToHorizontal = (
     percentage: number
-  ): 'collective' | 'neoliberal' => {
-    return percentage >= 50 ? 'neoliberal' : 'collective'
+  ): 'collective' | 'neutral' | 'neoliberal' => {
+    if (percentage < 33) return 'collective'
+    if (percentage < 66) return 'neutral'
+    return 'neoliberal'
   }
 
   const percentageToVertical = (
@@ -203,6 +242,12 @@ const App = () => {
           hideUI={isTransitioning}
         />
       </div>
+
+      <SliderPanel
+        value={sliderPosition}
+        onChange={handleSliderChange}
+        onCommit={handleSliderCommit}
+      />
     </div>
   )
 }
