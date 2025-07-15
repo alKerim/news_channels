@@ -12,7 +12,7 @@ const GlobalStyles = createGlobalStyle`
 
   body {
     font-family: 'ms_sans_serif', sans-serif;
-    background-color: teal;
+    background-color: #01476B;
     padding: 20px;
   }
 `;

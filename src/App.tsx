@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import VideoPlayer from './components/VideoPlayer'
 import SliderPanel from './components/SliderPanel'
-import { getVideoSource, getAdSource } from './data/videoMap'
+import { getVideoSource, getAdSource, getAd2Source } from './data/videoMap'
 import { usePicoSliders } from './hooks/useEspSliders'
 
 const App = () => {
@@ -18,7 +18,9 @@ const App = () => {
   const [targetPosition, setTargetPosition] = useState(position)
   const [newsTimePercent, setNewsTimePercent] = useState(0)
   const [adTimePercent, setAdTimePercent] = useState(0)
+  const [ad2TimePercent, setAd2TimePercent] = useState(0)
   const [isPlayingAd, setIsPlayingAd] = useState(false)
+  const [isPlayingAd2, setIsPlayingAd2] = useState(false)
   const [adVersion, setAdVersion] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isShowingBanner, setIsShowingBanner] = useState(false)
@@ -28,12 +30,16 @@ const App = () => {
 
   const src = isShowingBanner 
     ? '/channel_banner/banner_neutral.mp4'
+    : isPlayingAd2
+    ? getAd2Source(position)
     : isPlayingAd
     ? getAdSource(position)
     : getVideoSource(position)
 
   const handleTimeUpdate = (percent: number) => {
-    if (isPlayingAd) {
+    if (isPlayingAd2) {
+      setAd2TimePercent(percent)
+    } else if (isPlayingAd) {
       setAdTimePercent(percent)
     } else if (!isShowingBanner) {
       setNewsTimePercent(percent)
@@ -51,8 +57,8 @@ const App = () => {
       newPos.horizontal !== position.horizontal ||
       newPos.vertical !== position.vertical
 
-    // Only show banner when switching between news videos, not when ad is playing
-    if (changed && !isTransitioning && !isShowingBanner && !isPlayingAd) {
+    // Only show banner when switching between news videos, not when any ad is playing
+    if (changed && !isTransitioning && !isShowingBanner && !isPlayingAd && !isPlayingAd2) {
       setIsTransitioning(true)
       setIsShowingBanner(true)
       setPendingPosition(newPos)
@@ -61,8 +67,8 @@ const App = () => {
       setTimeout(() => {
         setIsTransitioning(false)
       }, 800)
-    } else if (changed && !isTransitioning && !isShowingBanner && isPlayingAd) {
-      // If ad is playing, switch position immediately without banner
+    } else if (changed && !isTransitioning && !isShowingBanner && (isPlayingAd || isPlayingAd2)) {
+      // If any ad is playing, switch position immediately without banner
       setPosition(newPos)
       setTargetPosition(newPos)
     }
@@ -73,8 +79,8 @@ const App = () => {
       newPos.horizontal !== position.horizontal ||
       newPos.vertical !== position.vertical
 
-    // Only show banner when switching between news videos, not when ad is playing
-    if (changed && !isTransitioning && !isShowingBanner && !isPlayingAd) {
+    // Only show banner when switching between news videos, not when any ad is playing
+    if (changed && !isTransitioning && !isShowingBanner && !isPlayingAd && !isPlayingAd2) {
       setIsTransitioning(true)
       setIsShowingBanner(true)
       setPendingPosition(newPos)
@@ -83,8 +89,8 @@ const App = () => {
       setTimeout(() => {
         setIsTransitioning(false)
       }, 800)
-    } else if (changed && !isTransitioning && !isShowingBanner && isPlayingAd) {
-      // If ad is playing, switch position immediately without banner
+    } else if (changed && !isTransitioning && !isShowingBanner && (isPlayingAd || isPlayingAd2)) {
+      // If any ad is playing, switch position immediately without banner
       setPosition(newPos)
       setTargetPosition(newPos)
     }
@@ -102,15 +108,20 @@ const App = () => {
       }
       setIsShowingBanner(false)
       // Don't reset newsTimePercent here - let it continue from where it was
+    } else if (isPlayingAd2) {
+      // Ad2 finished, go back to news
+      setIsPlayingAd2(false)
+      setAd2TimePercent(0) // Reset ad2 time when ad2 ends
     } else if (isPlayingAd) {
+      // Ad1 finished, now play Ad2
       setIsPlayingAd(false)
-      setAdTimePercent(0) // Reset ad time when ad ends
+      setIsPlayingAd2(true)
+      setAdTimePercent(0) // Reset ad1 time when ad1 ends
     } else {
-      // News video ended, reset its time and switch to ad
+      // News video ended, reset its time and switch to ad1
       setNewsTimePercent(0)
       setIsPlayingAd(true)
       setAdVersion((v: number) => v + 1)
-      // Don't reset adTimePercent here - let it continue from where it was
     }
 
     setTimeout(() => {
@@ -159,8 +170,17 @@ const App = () => {
   // Get the appropriate starting time for the video
   const getVideoStartTime = () => {
     if (isShowingBanner) return 0
+    if (isPlayingAd2) return ad2TimePercent
     if (isPlayingAd) return adTimePercent
     return newsTimePercent
+  }
+
+  // Helper function to get current video type for display
+  const getCurrentVideoType = () => {
+    if (isShowingBanner) return 'Banner'
+    if (isPlayingAd2) return 'Ad2'
+    if (isPlayingAd) return 'Ad1'
+    return 'News'
   }
 
   return (
@@ -235,7 +255,8 @@ const App = () => {
           <span>V (S2A): {sliderData.slider2.channel_a.percentage}%</span>
           <span>Current: {position.horizontal}/{position.vertical}</span>
           <span>Expected: {percentageToHorizontal(sliderData.slider1.channel_a.percentage)}/{percentageToVertical(sliderData.slider2.channel_a.percentage)}</span>
-          <span>News: {Math.round(newsTimePercent * 100)}% | Ad: {Math.round(adTimePercent * 100)}%</span>
+          <span>Playing: {getCurrentVideoType()}</span>
+          <span>News: {Math.round(newsTimePercent * 100)}% | Ad1: {Math.round(adTimePercent * 100)}% | Ad2: {Math.round(ad2TimePercent * 100)}%</span>
         </div>
       )}
 
@@ -251,15 +272,17 @@ const App = () => {
       >
         <VideoPlayer
           key={
-            isPlayingAd
-              ? `ad-${adVersion}`
+            isPlayingAd2
+              ? `ad2-${adVersion}`
+              : isPlayingAd
+              ? `ad1-${adVersion}`
               : `news-${position.horizontal}-${position.vertical}`
           }
           src={src}
           timePercent={getVideoStartTime()}
           onTimeUpdate={handleTimeUpdate}
           onEnd={handleVideoEnd}
-          isAd={isPlayingAd}
+          isAd={isPlayingAd || isPlayingAd2}
           position={position}
           hideUI={isTransitioning}
         />

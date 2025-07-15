@@ -31,3 +31,17 @@ export function getAdSource(pos: Position): string {
 
   return map[key] ?? '/ads/generic_ad.mp4'
 }
+
+export function getAd2Source(pos: Position): string {
+  const key = `${pos.horizontal}_${pos.vertical}`
+  const map: Record<string, string> = {
+    'collective_progressive': '/ads2/left_progressive_ad2.mp4',
+    'collective_authoritative': '/ads2/left_conservative_ad2.mp4',
+    'neutral_progressive': '/ads2/neutral_ad2.mp4',
+    'neutral_authoritative': '/ads2/neutral_ad2.mp4',
+    'neoliberal_progressive': '/ads2/right_progressive_ad2.mp4',
+    'neoliberal_authoritative': '/ads2/right_conservative_ad2.mp4',
+  }
+
+  return map[key] ?? '/ads2/generic_ad2.mp4'
+}
